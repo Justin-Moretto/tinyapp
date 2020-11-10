@@ -29,6 +29,14 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//update url
+app.post("/urls/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL
+  console.log(`updating ${req.params.shortURL} to ${req.body.newURL}`)
+  urlDatabase[req.params.shortURL] = req.body.newURL;
+  res.redirect(`/urls/${shortURL}`);
+});
+
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
