@@ -9,6 +9,24 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
+
+      <!-- if no user signed in, display login form-->
+      <% if (!username){ %>
+      <form class="form-inline" action="/login" method="POST" style="padding-left: 50px;">
+        <div>
+          <input class="form-control" type="text" name="username" placeholder="username" style="width: 180px">
+          <button type="submit" class="btn btn-primary">Login</button>
+        </div>
+      </form>
+      <!-- otherwise, display username and logout button -->
+      <% } else if (username){ %>
+        <form class="form-inline" action="/logout" method="POST" style="padding-left: 50px;">
+          <div>
+            <h5> signed in as <b><%= username %></b></h5>
+            <button type="submit" class="btn btn-primary">Logout</button>
+          </div>
+        </form>
+      <% } %>
     </div>
   </nav>
 </header>
