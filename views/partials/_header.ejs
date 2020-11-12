@@ -24,7 +24,7 @@
       <% } else if (currentUser){ %>
           <div>
             <form class="form-inline" action="/logout" method="POST">
-              <h6> signed in as <b><%= currentUser %></b></h6>
+              <h6> signed in as <b><%= userEmail %></b></h6>
               <button type="submit" class="btn btn-primary" >Logout</button>
             </form>
           </div>
