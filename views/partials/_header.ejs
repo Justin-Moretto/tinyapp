@@ -11,21 +11,23 @@
       </div>
 
       <!-- if no user signed in, display login form-->
-      <% if (!username){ %>
-      <form class="form-inline" action="/login" method="POST" style="padding-left: 50px;">
+      <% if (!currentUser){ %>
         <div>
-          <input class="form-control" type="text" name="username" placeholder="username" style="width: 180px">
-          <button type="submit" class="btn btn-primary">Login</button>
+          <form class="form-inline" action="/login" method="GET">
+            <button type="submit" class="btn btn-primary" >Login</button>
+          </form>
+          <form class="form-inline" action="/register" method="GET">
+            <button type="submit" class="btn btn-primary">Register</button>
+          </form>
         </div>
-      </form>
       <!-- otherwise, display username and logout button -->
-      <% } else if (username){ %>
-        <form class="form-inline" action="/logout" method="POST" style="padding-left: 50px;">
+      <% } else if (currentUser){ %>
           <div>
-            <h5> signed in as <b><%= username %></b></h5>
-            <button type="submit" class="btn btn-primary">Logout</button>
+            <form class="form-inline" action="/logout" method="POST">
+              <h6> signed in as <b><%= currentUser %></b></h6>
+              <button type="submit" class="btn btn-primary" >Logout</button>
+            </form>
           </div>
-        </form>
       <% } %>
     </div>
   </nav>
