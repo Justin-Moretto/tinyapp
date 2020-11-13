@@ -1,11 +1,19 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 
-app.use(cookieParser());
+const getUserByEmail = require('./helpers');
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2'],
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
+
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -67,14 +75,6 @@ function createTempVars(user_id) {
   return templateVars
 };
 
-//loops through e-mails, returns a user ID if email is found in the database, else returns false
-const verifyEmail = (email) => {
-  for (const user in users) {
-    if (users[user].email === email.toString())
-      return users[user].id;
-  };
-  return false;
-}
 
 
 //learning & testing material; not really relevant to tinyApp
@@ -96,10 +96,10 @@ app.get("/urls.json", (req, res) => {
 
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = createTempVars(req.cookies["user_id"]);
-  if (req.cookies["user_id"]) {
-    templateVars.currentUser = JSON.stringify(users[req.cookies["user_id"]].id);
-    templateVars.userEmail = users[req.cookies["user_id"]].email;
+  const templateVars = createTempVars(req.session['user_id']);
+  if (req.session['user_id']) {
+    templateVars.currentUser = JSON.stringify(users[req.session['user_id']].id);
+    templateVars.userEmail = users[req.session['user_id']].email;
     res.render("urls_new", templateVars);
   } else {
     res.redirect('/login');
@@ -110,8 +110,8 @@ app.get("/urls/new", (req, res) => {
 //update existing url
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const templateVars = createTempVars(req.cookies["user_id"]);
-  if (templateVars['urls'][req.params.shortURL]['userID'] === req.cookies["user_id"]) {
+  const templateVars = createTempVars(req.session['user_id']);
+  if (templateVars['urls'][req.params.shortURL]['userID'] === req.session['user_id']) {
     console.log(`updating ${req.params.shortURL} to ${req.body.newURL}`)
     urlDatabase[req.params.shortURL].longURL = req.body.newURL;
     res.redirect(`/urls/${shortURL}`);
@@ -123,9 +123,9 @@ app.post("/urls/:shortURL", (req, res) => {
 
 //displaying urls
 app.get("/urls", (req, res) => {
-  const templateVars = createTempVars(req.cookies["user_id"]);
-  if (req.cookies["user_id"]) {
-    templateVars.userEmail = users[req.cookies["user_id"]].email;
+  const templateVars = createTempVars(req.session['user_id']);
+  if (req.session['user_id']) {
+    templateVars.userEmail = users[req.session['user_id']].email;
   };
   res.render("urls_index", templateVars);
 });
@@ -133,7 +133,7 @@ app.get("/urls", (req, res) => {
 //adding a new url to db
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = new url(req.body.longURL, req.cookies["user_id"]);
+  urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
 
   console.log(`added ${JSON.stringify(req.body)} to database as ${shortURL}`);  // Log the POST request body to the console
   console.log("current database: " + JSON.stringify(urlDatabase));
@@ -143,9 +143,9 @@ app.post("/urls", (req, res) => {
 
 //deleting a url
 app.post("/urls/:shortURL/delete", (req, res) => {
-  // const templateVars = createTempVars(req.cookies["user_id"]);
+  // const templateVars = createTempVars(req.session['user_id']);
   console.log(urlDatabase[req.params.shortURL]);
-  if (urlDatabase[req.params.shortURL]['userID'] === req.cookies["user_id"]) {
+  if (urlDatabase[req.params.shortURL]['userID'] === req.session['user_id']) {
     delete urlDatabase[req.params.shortURL];
     console.log(`deleted ${req.params.shortURL} from database`)
   }
@@ -153,11 +153,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = createTempVars(req.cookies["user_id"]);
+  const templateVars = createTempVars(req.session['user_id']);
   templateVars.shortURL = req.params.shortURL;
   templateVars.longURL = urlDatabase[req.params.shortURL].longURL;
-  if (req.cookies["user_id"]) {
-    templateVars.userEmail = users[req.cookies["user_id"]].email;
+  if (req.session['user_id']) {
+    templateVars.userEmail = users[req.session['user_id']].email;
   };
   res.render("urls_show", templateVars);
 });
@@ -182,14 +182,11 @@ app.get('/login', (req, res) => {
 
 //loging in
 app.post("/login", (req, res) => {
-  const registeredUser = verifyEmail(req.body.email);
-  // console.log(users[registeredUser].password + " VERSUS " + req.body.password);
-  // console.log(bcrypt.hashSync(req.body.password, 10));
-  // console.log(bcrypt.hashSync(req.body.password, 10));
+  const registeredUser = getUserByEmail(req.body.email, users);
   if (registeredUser) {
     if (bcrypt.compareSync(req.body.password, users[registeredUser].password)) {
       console.log(`${JSON.stringify(registeredUser)} logged in`);
-      res.cookie("user_id", registeredUser);
+      req.session["user_id"] = registeredUser;
       res.redirect(`/urls`);
     };
     return res.send('403');
@@ -199,7 +196,7 @@ app.post("/login", (req, res) => {
 
 //logout (clear user_id cookie)
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('urls');
 });
 
@@ -214,7 +211,7 @@ app.post('/register', (req, res) => {
     return res.send('400');
   };
 
-  if (verifyEmail(req.body.email)) {
+  if (getUserByEmail(req.body.email, users)) {
     return res.send('400');
   };
 
@@ -224,7 +221,7 @@ app.post('/register', (req, res) => {
     newUser['password'] = bcrypt.hashSync(req.body.password, 10);
     users[newUser.id] = newUser;
     console.log(`New user registered: ${JSON.stringify(newUser)}`);
-    res.cookie("user_id", newUser.id);
+    req.session["user_id"] = newUser.id;
     res.redirect(`/urls`);
   }
 
