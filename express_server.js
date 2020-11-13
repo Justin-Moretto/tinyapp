@@ -28,8 +28,7 @@ const urlDatabase = {
 
 const users = {
 
-}
-
+};
 
 //user class
 class user {
@@ -58,24 +57,26 @@ const urlsForUser = (id, db) => {
 };
 
 //used to generate short URLs and user IDs
-function generateRandomString() {
+const generateRandomString = () => {
   return Math.random().toString(36).substring(2,8);
 };
 
 //create template Vars (DRY)
-function createTempVars(user_id) {
+const createTempVars = (user_id) => {
   const templateVars = {
     urls: urlsForUser(user_id, urlDatabase),
     users: users,
-    currentUser: null,
+    currentUser: undefined,
   };
   if (user_id) {
-    templateVars.currentUser = JSON.stringify(users[user_id].id)
-  };
-  return templateVars
+    templateVars.currentUser = JSON.stringify(users[user_id].id);
+  }
+  return templateVars;
 };
 
-
+//
+//  ROUTES:
+//
 
 //learning & testing material; not really relevant to tinyApp
 app.get("/", (req, res) => {
@@ -94,7 +95,7 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-
+//create new tiny url
 app.get("/urls/new", (req, res) => {
   const templateVars = createTempVars(req.session['user_id']);
   if (req.session['user_id']) {
@@ -103,7 +104,7 @@ app.get("/urls/new", (req, res) => {
     res.render("urls_new", templateVars);
   } else {
     res.redirect('/login');
-  };
+  }
   
 });
 
@@ -112,25 +113,25 @@ app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const templateVars = createTempVars(req.session['user_id']);
   if (templateVars['urls'][req.params.shortURL]['userID'] === req.session['user_id']) {
-    console.log(`updating ${req.params.shortURL} to ${req.body.newURL}`)
+    console.log(`updating ${req.params.shortURL} to ${req.body.newURL}`);
     urlDatabase[req.params.shortURL].longURL = req.body.newURL;
     res.redirect(`/urls/${shortURL}`);
   } else {
     res.redirect(`/urls`);
-  };
+  }
   
 });
 
-//displaying urls
+//display all my urls (if signed in)
 app.get("/urls", (req, res) => {
   const templateVars = createTempVars(req.session['user_id']);
   if (req.session['user_id']) {
     templateVars.userEmail = users[req.session['user_id']].email;
-  };
+  }
   res.render("urls_index", templateVars);
 });
 
-//adding a new url to db
+//add a new url to db
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
@@ -141,24 +142,25 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-//deleting a url
+//delete a url
 app.post("/urls/:shortURL/delete", (req, res) => {
   // const templateVars = createTempVars(req.session['user_id']);
   console.log(urlDatabase[req.params.shortURL]);
   if (urlDatabase[req.params.shortURL]['userID'] === req.session['user_id']) {
     delete urlDatabase[req.params.shortURL];
-    console.log(`deleted ${req.params.shortURL} from database`)
+    console.log(`deleted ${req.params.shortURL} from database`);
   }
   res.redirect(`/urls`);
 });
 
+//
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = createTempVars(req.session['user_id']);
   templateVars.shortURL = req.params.shortURL;
   templateVars.longURL = urlDatabase[req.params.shortURL].longURL;
   if (req.session['user_id']) {
     templateVars.userEmail = users[req.session['user_id']].email;
-  };
+  }
   res.render("urls_show", templateVars);
 });
 
@@ -168,19 +170,19 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL
-  console.log(`updating ${req.params.shortURL} to ${req.body.newURL}`)
+  const shortURL = req.params.shortURL;
+  console.log(`updating ${req.params.shortURL} to ${req.body.newURL}`);
   urlDatabase[req.params.shortURL] = req.body.newURL;
   res.redirect(`/urls/${shortURL}`);
 });
 
 //go to login page
 app.get('/login', (req, res) => {
+  const templateVars = createTempVars(req.session['user_id']);
+  res.render('account_login', templateVars);
+});
 
-  res.render('account_login');
-})
-
-//loging in
+//log in
 app.post("/login", (req, res) => {
   const registeredUser = getUserByEmail(req.body.email, users);
   if (registeredUser) {
@@ -188,9 +190,11 @@ app.post("/login", (req, res) => {
       console.log(`${JSON.stringify(registeredUser)} logged in`);
       req.session["user_id"] = registeredUser;
       res.redirect(`/urls`);
-    };
+    }
+    console.log('incorrect password');
     return res.send('403');
-  };
+  }
+  console.log('not a valid email');
   return res.send('403');
 });
 
@@ -202,18 +206,19 @@ app.post("/logout", (req, res) => {
 
 //go to registration page
 app.get("/register", (req, res) => {
-  res.render("account_registration");
+  const templateVars = createTempVars(req.session['user_id']);
+  res.render("account_registration", templateVars);
 });
 
 //register new account
 app.post('/register', (req, res) => {
   if (!req.body.email || !req.body.password) {
     return res.send('400');
-  };
+  }
 
   if (getUserByEmail(req.body.email, users)) {
     return res.send('400');
-  };
+  }
 
   if (req.body.email && req.body.password) {
     let newUser = new user();
@@ -224,7 +229,6 @@ app.post('/register', (req, res) => {
     req.session["user_id"] = newUser.id;
     res.redirect(`/urls`);
   }
-
 });
 
 

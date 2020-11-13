@@ -12,20 +12,20 @@
 
       <!-- if no user signed in, display login form-->
       <% if (!currentUser){ %>
-        <div>
-          <form class="form-inline" action="/login" method="GET">
-            <button type="submit" class="btn btn-primary" >Login</button>
+        <div style="float: right; padding-left: 66%;">
+          <form action="/login" method="GET" style="float: left;">
+            <button type="submit" class="btn btn-primary">Login</button>
           </form>
-          <form class="form-inline" action="/register" method="GET">
+          <form action="/register" method="GET" style="float: left; margin-left: 5px;">
             <button type="submit" class="btn btn-primary">Register</button>
           </form>
         </div>
       <!-- otherwise, display username and logout button -->
       <% } else if (currentUser){ %>
-          <div>
-            <form class="form-inline" action="/logout" method="POST">
+          <div style="float: right; padding-left: 66%;">
+            <form class="form-inline" action="/logout" method="POST" style="float: left">
               <h6> signed in as <b><%= userEmail %></b></h6>
-              <button type="submit" class="btn btn-primary" >Logout</button>
+              <button type="submit" class="btn btn-primary" style="margin-left: 5px;">Logout</button>
             </form>
           </div>
       <% } %>
