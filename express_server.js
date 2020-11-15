@@ -1,11 +1,13 @@
-const express = require("express");
+const express = require('express');
 const app = express();
 const PORT = 8080; // default port 8080
 const cookieSession = require('cookie-session');
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 
-const getUserByEmail = require('./helpers');
+const getUserByEmail = require('./helpers').getUserByEmail;
+const generateRandomString = require('./helpers').generateRandomString;
+const createTempVars = require('./helpers').createTempVars;
 
 app.use(cookieSession({
   name: 'session',
@@ -14,26 +16,23 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
-app.set("view engine", "ejs");
+app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
 const urlDatabase = {
-  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "1qw23r"},
-  "9sm5xK": { longURL:"http://www.google.com", userID: "1qw23e"}
+  'b2xVn2': { longURL: 'http://www.lighthouselabs.ca', userID: '1qw23r'},
+  '9sm5xK': { longURL:'http://www.google.com', userID: '1qw23e'}
 };
 
-const users = {
+const userDatabase = {
 
 };
 
 //user class
 class user {
-  constructor() {
+  constructor(email) {
     this.id = generateRandomString();
+    this.email = email;
   }
 }
 
@@ -45,125 +44,74 @@ class url {
   }
 }
 
-//filters out urls from database which aren't tied to current user
-const urlsForUser = (id, db) => {
-  const urls = {};
-  for (const url in db) {
-    if (db[url].userID === id) {
-      urls[url] = db[url];
-    }
-  }
-  return urls;
-};
 
-//used to generate short URLs and user IDs
-const generateRandomString = () => {
-  return Math.random().toString(36).substring(2,8);
-};
-
-//create template Vars
-const createTempVars = (user_id) => {
-  const templateVars = {
-    urls: urlsForUser(user_id, urlDatabase),
-    users: users,
-    currentUser: undefined,
-  };
-  if (user_id) {
-    templateVars.currentUser = JSON.stringify(users[user_id].id);
-  }
-  return templateVars;
-};
-
-//
-//  ROUTES:
-//
+//////////////
+//  ROUTES: //
+//////////////
 
 //redirect to login
-app.get("/", (req, res) => {
+app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
-//learning & testing material; not really relevant to tinyApp
-app.get("/hello", (req, res) => {
-  const templateVars = {
-    greeting: 'Hello World!',
-  };
-  res.render("hello_world", templateVars);
-});
-
-//JSON
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
 //create new tiny url
-app.get("/urls/new", (req, res) => {
-  const templateVars = createTempVars(req.session['user_id']);
+app.get('/urls/new', (req, res) => {
+  const templateVars = createTempVars(req.session['user_id'], null, userDatabase, urlDatabase);
   if (req.session['user_id']) {
-    templateVars.currentUser = JSON.stringify(users[req.session['user_id']].id);
-    templateVars.userEmail = users[req.session['user_id']].email;
-    res.render("urls_new", templateVars);
+    res.render('urls_new', templateVars);
   } else {
     res.redirect('/login');
   }
-  
 });
 
 //navigate to tiny url's page to edit it
-app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = createTempVars(req.session['user_id']);
-  templateVars.shortURL = req.params.shortURL;
-  templateVars.longURL = urlDatabase[req.params.shortURL].longURL;
-  if (req.session['user_id']) {
-    templateVars.userEmail = users[req.session['user_id']].email;
-  }
-  res.render("urls_show", templateVars);
+app.get('/urls/:shortURL', (req, res) => {
+  const templateVars = createTempVars(req.session['user_id'], req.params.shortURL, userDatabase, urlDatabase);
+  templateVars.urlOwner = urlDatabase[req.params.shortURL].userID;
+  console.log(templateVars.urlOwner + " AND " + templateVars.currentUser);
+  res.render('urls_show', templateVars);
 });
 
 //update existing url
-app.post("/urls/:shortURL", (req, res) => {
+app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  const templateVars = createTempVars(req.session['user_id']);
-  if (templateVars['urls'][req.params.shortURL]['userID'] === req.session['user_id']) {
-    urlDatabase[req.params.shortURL].longURL = req.body.newURL;
-    res.redirect(`/urls/${shortURL}`);
-  } else {
-    res.redirect(`/urls`);
+  const templateVars = createTempVars(req.session['user_id'], null, userDatabase, urlDatabase);
+  if (templateVars['urls'][shortURL]['userID'] === req.session['user_id']) {
+    urlDatabase[shortURL].longURL = req.body.newURL;
   }
+  res.redirect(`/urls`);
 });
 
 //display all my urls (if signed in)
-app.get("/urls", (req, res) => {
-  const templateVars = createTempVars(req.session['user_id']);
-  if (req.session['user_id']) {
-    templateVars.userEmail = users[req.session['user_id']].email;
-  }
-  res.render("urls_index", templateVars);
+app.get('/urls', (req, res) => {
+  const templateVars = createTempVars(req.session['user_id'], null, userDatabase, urlDatabase);
+  console.log(templateVars);
+  res.render('urls_index', templateVars);
 });
 
 //add a new url to db
-app.post("/urls", (req, res) => {
+app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
 
   console.log(`added ${JSON.stringify(req.body)} to database as ${shortURL}`);  // Log the POST request body to the console
-  console.log("current database: " + JSON.stringify(urlDatabase));
+  console.log('current database: ' + JSON.stringify(urlDatabase));
 
   res.redirect(`/urls/${shortURL}`);
 });
 
 //delete a url
-app.post("/urls/:shortURL/delete", (req, res) => {
-  if (urlDatabase[req.params.shortURL]['userID'] === req.session['user_id']) {
-    delete urlDatabase[req.params.shortURL];
-    console.log(`deleted ${req.params.shortURL} from database`);
+app.post('/urls/:shortURL/delete', (req, res) => {
+  const shortURL = req.params.shortURL;
+  if (urlDatabase[shortURL]['userID'] === req.session['user_id']) {
+    delete urlDatabase[shortURL];
+    console.log(`deleted ${shortURL} from database`);
   }
   res.redirect(`/urls`);
 });
 
-
 //redirect to the true, long URL when tiny url is clicked
-app.get("/u/:shortURL", (req, res) => {
+app.get('/u/:shortURL', (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
@@ -173,17 +121,17 @@ app.get('/login', (req, res) => {
   if (req.session['user_id']) {
     res.redirect('/urls');
   }
-  const templateVars = createTempVars(req.session['user_id']);
+  const templateVars = createTempVars(req.session['user_id'], null, userDatabase, urlDatabase);
   res.render('account_login', templateVars);
 });
 
 //log in
-app.post("/login", (req, res) => {
-  const registeredUser = getUserByEmail(req.body.email, users);
+app.post('/login', (req, res) => {
+  const registeredUser = getUserByEmail(req.body.email, userDatabase);
   if (registeredUser) {
-    if (bcrypt.compareSync(req.body.password, users[registeredUser].password)) {
+    if (bcrypt.compareSync(req.body.password, userDatabase[registeredUser].password)) {
       console.log(`${JSON.stringify(registeredUser)} logged in`);
-      req.session["user_id"] = registeredUser;
+      req.session['user_id'] = registeredUser;
       res.redirect(`/urls`);
     }
     return res.status(403).send('403 - incorrect password');
@@ -192,12 +140,12 @@ app.post("/login", (req, res) => {
 });
 
 //go to registration page
-app.get("/register", (req, res) => {
+app.get('/register', (req, res) => {
   if (req.session['user_id']) {
     res.redirect('/urls');
   }
-  const templateVars = createTempVars(req.session['user_id']);
-  res.render("account_registration", templateVars);
+  const templateVars = createTempVars(req.session['user_id'], null, userDatabase, urlDatabase);
+  res.render('account_registration', templateVars);
 });
 
 //register new account
@@ -206,23 +154,28 @@ app.post('/register', (req, res) => {
     return res.status(400).send('400 - please enter an e-mail and password');
   }
 
-  if (getUserByEmail(req.body.email, users)) {
+  if (getUserByEmail(req.body.email, userDatabase)) {
     return res.status(400).send('400 - that e-mail is already registered with tinyApp');
   }
 
   if (req.body.email && req.body.password) {
-    let newUser = new user();
-    newUser['email'] = req.body.email;
+    let newUser = new user(req.body.email);
     newUser['password'] = bcrypt.hashSync(req.body.password, 10);
-    users[newUser.id] = newUser;
+    userDatabase[newUser.id] = newUser;
     console.log(`New user registered: ${JSON.stringify(newUser)}`);
-    req.session["user_id"] = newUser.id;
+    req.session['user_id'] = newUser.id;
     res.redirect(`/urls`);
   }
 });
 
 //logout (clear user_id cookie)
-app.post("/logout", (req, res) => {
+app.post('/logout', (req, res) => {
   req.session = null;
   res.redirect('urls');
+});
+
+
+//listen
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
