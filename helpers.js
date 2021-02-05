@@ -1,4 +1,4 @@
-//loops through e-mails, returns a user ID if email is found in the database, else returns false
+//loops through e-mails, returns a user ID if email is found in the database, else returns undefined
 const getUserByEmail = (email, database) => {
   for (const user in database) {
     if (database[user].email === email.toString())

@@ -24,14 +24,12 @@ app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({extended: true}));
 
+//my 'databases' which are really just objects
 const urlDatabase = {
   'b2xVn2': { longURL: 'http://www.lighthouselabs.ca', userID: '1qw23r'},
   '9sm5xK': { longURL:'http://www.google.com', userID: '1qw23e'}
 };
-
-const userDatabase = {
-
-};
+const userDatabase = {};
 
 //user class
 class user {
@@ -71,8 +69,9 @@ app.get('/urls/new', (req, res) => {
 
 //navigate to tiny url's page to edit it
 app.get('/urls/:shortURL', (req, res) => {
-  const templateVars = createTempVars(req.session['user_id'], req.params.shortURL, userDatabase, urlDatabase);
-  templateVars.urlOwner = urlDatabase[req.params.shortURL].userID;
+  const shortURL = req.params.shortURL;
+  const templateVars = createTempVars(req.session['user_id'], shortURL, userDatabase, urlDatabase);
+  templateVars.urlOwner = urlDatabase[shortURL].userID;
   res.render('urls_show', templateVars);
 });
 
