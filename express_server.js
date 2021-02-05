@@ -96,9 +96,6 @@ app.get('/urls', (req, res) => {
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
-
-  console.log(`added ${JSON.stringify(req.body)} to database as ${shortURL}`);  // Log the POST request body to the console
-
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -107,7 +104,6 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
   if (urlDatabase[shortURL]['userID'] === req.session['user_id']) {
     delete urlDatabase[shortURL];
-    console.log(`deleted ${shortURL} from database`);
   }
   res.redirect(`/urls`);
 });
@@ -132,7 +128,6 @@ app.post('/login', (req, res) => {
   const registeredUser = getUserByEmail(req.body.email, userDatabase);
   if (registeredUser) {
     if (bcrypt.compareSync(req.body.password, userDatabase[registeredUser].password)) {
-      console.log(`${JSON.stringify(registeredUser)} logged in`);
       req.session['user_id'] = registeredUser;
       res.redirect(`/urls`);
     }
@@ -165,7 +160,6 @@ app.post('/register', (req, res) => {
     const salt = bcrypt.genSaltSync(10);
     newUser['password'] = bcrypt.hashSync(req.body.password, salt);
     userDatabase[newUser.id] = newUser;
-    console.log(`New user registered: ${JSON.stringify(newUser)}`);
     req.session['user_id'] = newUser.id;
     res.redirect(`/urls`);
   }
