@@ -109,12 +109,11 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 
 //redirect to the true, long URL when tiny url is clicked
 app.get('/u/:shortURL', (req, res) => {
-  // if () {
-
-  // }
-
   const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  if (longURL) {
+    res.redirect(longURL);
+  }
+  res.redirect('/urls');
 });
 
 //go to login page
