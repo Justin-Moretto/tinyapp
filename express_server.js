@@ -22,12 +22,12 @@ app.use(cookieSession({
 //set view engine to ejs
 app.set('view engine', 'ejs');
 
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 //my 'databases' which are really just objects
 const urlDatabase = {
-  'b2xVn2': { longURL: 'http://www.lighthouselabs.ca', userID: '1qw23r'},
-  '9sm5xK': { longURL:'http://www.google.com', userID: '1qw23e'}
+  'b2xVn2': { longURL: 'http://www.lighthouselabs.ca', userID: '1qw23r' },
+  '9sm5xK': { longURL: 'http://www.google.com', userID: '1qw23e' }
 };
 const userDatabase = {};
 
@@ -93,9 +93,13 @@ app.get('/urls', (req, res) => {
 
 //add a new url to db
 app.post('/urls', (req, res) => {
-  if (urlDatabase[shortURL]['userID'] === req.session['user_id']) {
-    const shortURL = generateRandomString();
-    urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
+  const shortURL = generateRandomString();
+  if (req.session['user_id']) {
+    let longURL = req.body.longURL;
+    if (!(longURL.startsWith('http://') || longURL.startsWith('https://'))) {
+      longURL = "http://" + longURL;
+    }
+    urlDatabase[shortURL] = new url(longURL, req.session['user_id']);
   }
   res.redirect(`/urls/${shortURL}`);
 });
