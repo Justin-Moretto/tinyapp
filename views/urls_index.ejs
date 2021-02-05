@@ -26,10 +26,14 @@
             <% for(const url in urls) { %>
               <tr>
                 <td>
-                  <%= url %>
+                  <a href="/u/<%= shortURL %>" target="blank">
+                    <%= url %>
+                  </a>
                 </td>
                 <td>
-                  <%= urls[url].longURL %>
+                  <a href="<%= urls[url].longURL %>" target="blank">
+                    <%= urls[url].longURL %>
+                  </a>
                 </td>
                 <td>
                   <form method="GET" action="/urls/<%= url %>">

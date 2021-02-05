@@ -15,11 +15,15 @@
         <div class="card text-center">
           <div class="card-header"></div>
           <div class="card-body">
-            <h5 class="card-title">TinyURL for: <%= longURL %>
+            <h5 class="card-title"> TinyURL for: <a href="<%= longURL %>" target="blank">
+                <%= longURL %>
+              </a>
             </h5>
-            <p class="card-text">Short URL: <a href="/u/<%= shortURL %>">
+            <p class="card-text">
+              Short URL: <a href="/u/<%= shortURL %>" target="blank">
                 <%= shortURL %>
-              </a></p>
+              </a>
+            </p>
           </div>
           <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
             <div class="form-group mb-2">
