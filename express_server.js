@@ -1,10 +1,13 @@
 const express = require('express');
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = process.env.PORT || 8080; // default port 8080
+
+//npm packages
 const cookieSession = require('cookie-session');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 
+//importing functions from helpers.js
 const getUserByEmail = require('./helpers').getUserByEmail;
 const generateRandomString = require('./helpers').generateRandomString;
 const createTempVars = require('./helpers').createTempVars;
