@@ -73,7 +73,6 @@ app.get('/urls/new', (req, res) => {
 app.get('/urls/:shortURL', (req, res) => {
   const templateVars = createTempVars(req.session['user_id'], req.params.shortURL, userDatabase, urlDatabase);
   templateVars.urlOwner = urlDatabase[req.params.shortURL].userID;
-  console.log(templateVars.urlOwner + " AND " + templateVars.currentUser);
   res.render('urls_show', templateVars);
 });
 
@@ -90,7 +89,6 @@ app.post('/urls/:shortURL', (req, res) => {
 //display all my urls (if signed in)
 app.get('/urls', (req, res) => {
   const templateVars = createTempVars(req.session['user_id'], null, userDatabase, urlDatabase);
-  console.log(templateVars);
   res.render('urls_index', templateVars);
 });
 
@@ -100,7 +98,6 @@ app.post('/urls', (req, res) => {
   urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
 
   console.log(`added ${JSON.stringify(req.body)} to database as ${shortURL}`);  // Log the POST request body to the console
-  console.log('current database: ' + JSON.stringify(urlDatabase));
 
   res.redirect(`/urls/${shortURL}`);
 });
@@ -165,7 +162,8 @@ app.post('/register', (req, res) => {
 
   if (req.body.email && req.body.password) {
     let newUser = new user(req.body.email);
-    newUser['password'] = bcrypt.hashSync(req.body.password, 10);
+    const salt = bcrypt.genSaltSync(10);
+    newUser['password'] = bcrypt.hashSync(req.body.password, salt);
     userDatabase[newUser.id] = newUser;
     console.log(`New user registered: ${JSON.stringify(newUser)}`);
     req.session['user_id'] = newUser.id;
