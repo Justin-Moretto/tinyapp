@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 8080; // default port 8080
 //npm packages
 const cookieSession = require('cookie-session');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt-nodejs');
 
 //importing functions from helpers.js
 const getUserByEmail = require('./helpers').getUserByEmail;
@@ -19,7 +19,9 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
+//set view engine to ejs
 app.set('view engine', 'ejs');
+
 app.use(bodyParser.urlencoded({extended: true}));
 
 const urlDatabase = {
