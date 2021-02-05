@@ -93,8 +93,10 @@ app.get('/urls', (req, res) => {
 
 //add a new url to db
 app.post('/urls', (req, res) => {
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
+  if (urlDatabase[shortURL]['userID'] === req.session['user_id']) {
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = new url(req.body.longURL, req.session['user_id']);
+  }
   res.redirect(`/urls/${shortURL}`);
 });
 
